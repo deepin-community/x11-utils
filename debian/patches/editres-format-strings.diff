@@ -1,0 +1,71 @@
+Fix build error with -Werror=format-security
+
+geometry.c: In function '_FindWidget':
+geometry.c:66:5: error: format not a string literal and no format arguments [-Werror=format-security]
+     sprintf(msg, res_labels[14]);
+     ^
+geometry.c: In function 'DisplayChild':
+geometry.c:106:2: error: format not a string literal and no format arguments [-Werror=format-security]
+  sprintf(msg, res_labels[13]);
+  ^
+cc1: some warnings being treated as errors
+
+
+--- a/editres/geometry.c
++++ b/editres/geometry.c
+@@ -61,11 +61,11 @@ _FindWidget(Widget w)
+     char msg[BUFSIZ];
+     WNode * node;
+     Window win;
+     int x, y;			/* location of event in root coordinates. */
+ 
+-    snprintf(msg, sizeof(msg), res_labels[14]);
++    snprintf(msg, sizeof(msg), "%s", res_labels[14]);
+ 
+     SetMessage(global_screen_data.info_label, msg);
+ 
+     if ( (win = GetClientWindow(w, &x, &y)) != None) {
+ 	node = FindWidgetFromWindow(global_tree_info, win);
+@@ -101,11 +101,11 @@ DisplayChild(Event *event)
+ 
+     node = FindNode(global_tree_info->top_node, find_event->widgets.ids,
+ 		    find_event->widgets.num_widgets);
+ 
+     if (node == NULL) {
+-	snprintf(msg, sizeof(msg), res_labels[13]);
++	snprintf(msg, sizeof(msg), "%s", res_labels[13]);
+ 	SetMessage(global_screen_data.info_label, msg);
+ 	return;
+     }
+ 
+     SetAndCenterTreeNode(node);
+--- a/editres/svpopup.c
++++ b/editres/svpopup.c
+@@ -125,11 +125,11 @@ ModifySVEntry(Widget w, XEvent *event, S
+     case 'V':
+ 	new = global_screen_data.val_text;
+ 	old = global_screen_data.res_text;
+ 	break;
+     default:
+-	snprintf(msg, sizeof(msg), res_labels[22]);
++	snprintf(msg, sizeof(msg), "%s", res_labels[22]);
+ 	SetMessage(global_screen_data.info_label, msg);
+ 	return;
+     }
+ 
+     _SetField(new, old);
+--- a/editres/utils.c
++++ b/editres/utils.c
+@@ -516,11 +516,11 @@ HandleGetResources(Event *event)
+ 	node = FindNode(global_tree_info->top_node,
+ 			get_event->info[i].widgets.ids,
+ 			get_event->info[i].widgets.num_widgets);
+ 
+ 	if (node == NULL) {
+-	    snprintf(buf, sizeof(buf), res_labels[16]);
++	    snprintf(buf, sizeof(buf), "%s", res_labels[16]);
+ 	    AddString(&errors, buf);
+ 	    continue;
+ 	}
+ 
+ 	if (node->resources != NULL)

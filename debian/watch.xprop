@@ -1,0 +1,4 @@
+#git=git://anongit.freedesktop.org/xorg/app/xprop
+version=3
+opts="pgpsigurlmangle=s/$/.sig/" \
+https://xorg.freedesktop.org/releases/individual/app/ xprop-(.*)\.tar\.gz

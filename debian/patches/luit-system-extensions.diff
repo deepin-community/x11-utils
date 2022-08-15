@@ -1,0 +1,24 @@
+From: Julien Cristau <jcristau@debian.org>
+Subject: configure: use AC_USE_SYSTEM_EXTENSIONS
+
+On glibc, posix_openpt requires _XOPEN_SOURCE >= 600
+
+Index: x11-utils/luit/configure.ac
+===================================================================
+--- x11-utils.orig/luit/configure.ac
++++ x11-utils/luit/configure.ac
+@@ -30,13 +30,13 @@ AM_MAINTAINER_MODE
+ m4_ifndef([XORG_MACROS_VERSION],
+           [m4_fatal([must install xorg-macros 1.8 or later before running autoconf/autogen])])
+ XORG_MACROS_VERSION(1.8)
++AC_USE_SYSTEM_EXTENSIONS
+ XORG_DEFAULT_OPTIONS
+ 
+ AC_CONFIG_HEADERS([config.h])
+ 
+ AC_CANONICAL_HOST
+ 
+-
+ AC_CHECK_HEADERS([pty.h stropts.h sys/param.h sys/select.h])
+ AC_CHECK_FUNCS([select grantpt posix_openpt])
+ 
