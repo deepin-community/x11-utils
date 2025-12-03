@@ -1,3 +1,255 @@
+commit 6013f24444d576ad263004c45edd52b4e8cec632
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Sun Mar 3 09:37:16 2024 -0800
+
+    editres 1.0.9
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit d0bc9be0ef9545b8f34a35a766c165bd7fb073f3
+Author: Peter Radisson <Radisson97@web.de>
+Date:   Wed Sep 6 14:46:40 2023 +0200
+
+    fix const error
+    
+    missing const causes 'conflicting type' error at initialisation
+    and aborted compilation.
+
+commit 6cb5bf04ccdfadef8f7acd81b41b15f0cf053c5f
+Author: Walter Harms <xt4ever@web.de>
+Date:   Fri Apr 7 14:48:42 2023 +0200
+
+    Fix shadowing box
+    
+    widgets.c: In function ‘CreateResourceBoxWidgets’:
+    widgets.c:473:18: warning: declaration of ‘box’ shadows a global declaration [-Wshadow]
+         Widget pane, box, button, viewport, pane_child;
+    
+    rename box to rbox
+
+commit c10de6efe50fcd7be57e79274889d11e6845f82e
+Author: Walter Harms <xt4ever@web.de>
+Date:   Fri Apr 7 13:09:26 2023 +0200
+
+    fix initialization discards const
+    
+    FIX warnings like:
+    
+        initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+       {"debug", "Debug", XtRBoolean, sizeof(Boolean),
+
+commit 316df270e14ce13a3a631cdfd383a5a367fe14b0
+Author: Walter Harms <xt4ever@web.de>
+Date:   Fri Apr 7 13:03:39 2023 +0200
+
+    stop const warnings
+    
+    fix  passing argument 1 of ‘RebuildMenusAndLabel’ discards ‘const’ qualifier
+    from pointer target type
+    only user is in comm.c
+
+commit 417f15e05e739e171b36dfa643b6418dc07ab6bc
+Author: Walter Harms <xt4ever@web.de>
+Date:   Fri Apr 7 12:58:05 2023 +0200
+
+    stop const warnings
+    
+        most warnings occur because XtSetArg() needs (String) aka char *
+        and the "string" is const char * these days.
+
+commit ce2c6484fec8055480cfaf99137bc9922d44373a
+Author: Walter Harms <xt4ever@web.de>
+Date:   Fri Apr 7 12:53:11 2023 +0200
+
+    stop const warnings
+    
+       The warning occurs because XtSetArg() needs (String) aka char *
+        and the "string" is const char * these days.
+
+commit d3409224807c5d779162f92465d58120c77b7840
+Author: Walter Harms <xt4ever@web.de>
+Date:   Fri Apr 7 12:44:06 2023 +0200
+
+    stop const warnings
+    
+        The warning occurs because XtSetArg() needs (String) aka char *
+        and the "string" is const char * these days.
+
+commit 07a58318ccd96c644b2748c57b285d5779fed0a8
+Author: Walter Harms <xt4ever@web.de>
+Date:   Fri Apr 7 12:38:09 2023 +0200
+
+    stop const warnings
+    
+    The warning occurs because XtSetArg() needs (String) aka char *
+    and the "string" is const char * these days.
+
+commit ce35acb5b2a0892863fc63a1315a60cbbb7f553f
+Author: Walter Harms <xt4ever@web.de>
+Date:   Fri Apr 7 12:17:22 2023 +0200
+
+    FIX some const warnings
+    
+    make type const char * to avoid warning
+
+commit 16df4dd92868ebc9663aae575df7dc3ce6e73797
+Author: Walter Harms <xt4ever@web.de>
+Date:   Fri Apr 7 11:57:37 2023 +0200
+
+    FIX const warning
+    
+    getting a bunch of warnings make i had to see the import ones.
+    So reduce the warnings by adding a few "const" no problem
+    for internals. For externals function add some casts.
+
+commit e15440c5456c798e2ba5368afcd3b17c752cc44c
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Thu Feb 9 11:55:52 2023 -0800
+
+    gitlab CI: stop requiring Signed-off-by in commits
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit 85a3ccd43c4601c9d80bea8441ec9711af9bd52d
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Mon Feb 6 18:20:20 2023 -0800
+
+    List which options were unrecognized before printing usage message
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit ad1da487b343ffdbeda09563984869cc56ab29a0
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Mon Feb 6 18:19:29 2023 -0800
+
+    Add -help and -version options
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit 80959deec664cd80cd5dbf84af86b52ded4eaee0
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Mon Feb 6 18:09:37 2023 -0800
+
+    Re-enable code to use XKB Bells
+    
+    Enabled by default, use ./configure --without-xkb to disable.
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit ca502149fb2abad58446ebf234aa5e1e40ed4517
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Mon Feb 6 17:55:31 2023 -0800
+
+    Ensure all *.c files include config.h before any other headers
+    
+    Makes sure that any flags set in config.h that affect system headers
+    are applied equally across all source files.
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit 2f248e96dcde3be96c21142c032f517aa5a06554
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Sun Apr 3 11:30:51 2022 -0700
+
+    editres 1.0.8
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit c62da59948e45ea316d74b98d33eba2a5b6265aa
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Fri Dec 3 14:45:39 2021 -0800
+
+    Build xz tarballs instead of bzip2
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit 9f60785b6091b5828ae28eb5763a1b8e5023a025
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Fri Dec 3 14:45:34 2021 -0800
+
+    gitlab CI: add a basic build test
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit ae0c5a4048bec6ebcc61a8cd4abbe79ac367c53e
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Sun Nov 28 14:25:45 2021 -0800
+
+    Fix spelling/wording issues
+    
+    Found by using:
+        codespell --builtin clear,rare,usage,informal,code,names
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit 15be5d8d295f4d7c779845cd11e06c08cfacad85
+Author: Matt Turner <mattst88@gmail.com>
+Date:   Fri Mar 27 09:56:26 2020 -0700
+
+    Add const to silence warning
+    
+    widgets.c:817:28: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+    
+    Signed-off-by: Matt Turner <mattst88@gmail.com>
+
+commit a97f306fd57878158962eb873c23f03a5c6da9db
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Sun Jun 2 11:38:57 2019 -0700
+
+    Clear -Wredundant-decls warnings from gcc 7.3
+    
+    comm.c:55:15: warning: redundant redeclaration of ‘CM_entries’ [-Wredundant-decls]
+     extern Widget CM_entries[NUM_CM_ENTRIES], TM_entries[NUM_TM_ENTRIES];
+                   ^~~~~~~~~~
+    In file included from comm.c:46:0:
+    editresP.h:339:15: note: previous declaration of ‘CM_entries’ was here
+     extern Widget CM_entries[NUM_CM_ENTRIES];
+                   ^~~~~~~~~~
+    comm.c:55:43: warning: redundant redeclaration of ‘TM_entries’ [-Wredundant-decls]
+     extern Widget CM_entries[NUM_CM_ENTRIES], TM_entries[NUM_TM_ENTRIES];
+                                               ^~~~~~~~~~
+    In file included from comm.c:46:0:
+    editresP.h:343:15: note: previous declaration of ‘TM_entries’ was here
+     extern Widget TM_entries[NUM_TM_ENTRIES];
+                   ^~~~~~~~~~
+    
+    handler.c:502:16: warning: redundant redeclaration of ‘do_get_values’ [-Wredundant-decls]
+     extern Boolean do_get_values;
+                    ^~~~~~~~~~~~~
+    In file included from handler.c:40:0:
+    editresP.h:334:16: note: previous declaration of ‘do_get_values’ was here
+     extern Boolean do_get_values;
+                    ^~~~~~~~~~~~~
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit 43c19175385f98894c1633ed57ec6778e17a38a6
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Sun Jun 2 11:35:43 2019 -0700
+
+    Clear 208 out of 210 -Wdiscarded-qualifiers warnings from gcc 7.3
+    
+    Depends on building with a libXt version that defines String as a
+    const char * if _CONST_X_STRING is defined.
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit 2b838dbd23f2ae2a3ff479003b13e03563624009
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Wed Nov 21 16:46:01 2018 -0800
+
+    Update configure.ac bug URL for gitlab migration
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit 90a95d3f6a661b76b0768b454c00468eb65e47fc
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Fri Nov 16 19:45:13 2018 -0800
+
+    Update README for gitlab migration
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
 commit 9644bfe7f56eb8c1cc795b724a6fc95ae4172d43
 Author: Alan Coopersmith <alan.coopersmith@oracle.com>
 Date:   Sun Mar 4 18:43:17 2018 -0800

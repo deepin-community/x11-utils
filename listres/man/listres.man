@@ -67,6 +67,12 @@ variable name or the class name.  The default is ``core''.
 .B \-format \fIprintf\-string\fP
 This option specifies the \fIprintf\fP-style format string to be used to print
 out the name, instance, class, and type of each resource.
+.TP 8
+.B \-help
+This option indicates that \fIlistres\fP should print a usage message and exit.
+.TP 8
+.B \-version
+This option indicates that \fIlistres\fP should print version info and exit.
 .SH "X DEFAULTS"
 To be written.
 .SH "SEE ALSO"
@@ -75,9 +81,5 @@ X(__miscmansuffix__), xrdb(__appmansuffix__), appropriate widget documents
 On operating systems that do not support dynamic linking of run-time routines,
 this program must have all of its known widgets compiled in.  The sources
 provide several tools for automating this process for various widget sets.
-.SH COPYRIGHT
-Copyright 1994 X Consortium
-.br
-See \fIX(__miscmansuffix__)\fP for a full statement of rights and permissions.
 .SH AUTHOR
 Jim Fulton, MIT X Consortium

@@ -33,6 +33,7 @@ from The Open Group.
 #include <X11/Xos.h>
 #include <X11/Xfuncs.h>
 #include <X11/Xutil.h>
+#include <sys/ioctl.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -64,6 +65,8 @@ from The Open Group.
 
 /* isprint() in "C" locale */
 #define c_isprint(c) ((c) >= 0x20 && (c) < 0x7f)
+
+static unsigned int term_width = 144 + 8;
 
 /*
  *
@@ -142,7 +145,7 @@ static char *
 Read_Quoted (FILE *stream)
 {
     char *ptr;
-    int c, length;
+    int length;
 
     Read_White_Space(stream);
     if (Read_Char(stream)!='\'')
@@ -150,6 +153,8 @@ Read_Quoted (FILE *stream)
 
     ptr = _large_buffer; length = MAXSTR;
     for (;;) {
+	int c;
+
 	if (length < 0)
 	    Fatal_Error("Bad format file format: dformat too long.");
 	c = Read_Char(stream);
@@ -264,17 +269,16 @@ Apply_Default_Formats (const char **format, const char **dformat)
 static void
 Lookup_Formats (Atom atom, const char **format, const char **dformat)
 {
-    int i;
-
     if (_property_formats)
-	for (i = _property_formats->thunk_count-1; i >= 0; i--)
-	    if (_property_formats[i].value == atom) {
+	for (int i = _property_formats->thunk_count-1; i >= 0; i--) {
+	    if (_property_formats[i].value == (long) atom) {
 		if (!*format)
 		    *format = _property_formats[i].format;
 		if (!*dformat)
 		    *dformat = _property_formats[i].dformat;
 		break;
 	    }
+	}
 }
 
 static void
@@ -531,11 +535,13 @@ Read_Mappings (FILE *stream)
 {
     char format_buffer[100];
     char name[1000];
-    const char *dformat, *format;
-    int count, c;
-    Atom atom;
+    int count;
 
     while ((count = fscanf(stream," %990s %90s ",name,format_buffer)) != EOF) {
+	const char *dformat, *format;
+	int c;
+	Atom atom;
+
 	if (count != 2)
 	    Fatal_Error("Bad format file format.");
 
@@ -593,7 +599,7 @@ Format_Signed (long wrd)
 
 /*ARGSUSED*/
 static int
-ignore_errors (Display *dpy, XErrorEvent *ev)
+ignore_errors (Display *display, XErrorEvent *ev)
 {
     return 0;
 }
@@ -615,7 +621,7 @@ Format_Atom (Atom atom)
 	snprintf(_formatting_buffer, sizeof(_formatting_buffer),
 		 "undefined atom # 0x%lx", atom);
     else {
-	int namelen = strlen(name);
+	size_t namelen = strlen(name);
 	if (namelen > MAXSTR) namelen = MAXSTR;
 	memcpy(_formatting_buffer, name, namelen);
 	_formatting_buffer[namelen] = '\0';
@@ -627,7 +633,7 @@ Format_Atom (Atom atom)
 static const char *
 Format_Mask_Word (long wrd)
 {
-    long bit_mask, bit;
+    unsigned long bit_mask, bit;
     int seen = 0;
 
     strcpy(_formatting_buffer, "{MASK: ");
@@ -748,6 +754,17 @@ is_utf8_locale (void)
 #endif
 }
 
+static int
+is_truecolor_term (void)
+{
+    char *colorterm = getenv( "COLORTERM" );
+
+    if (colorterm && !strcmp(colorterm,"truecolor"))
+	return 1;
+
+    return 0;
+}
+
 static const char *
 Format_Icons (const unsigned long *icon, int len)
 {
@@ -763,17 +780,28 @@ Format_Icons (const unsigned long *icon, int len)
 
     while (icon < end)
     {
-	unsigned long width, height;
-	int w, h;
+	unsigned long width, height, display_width;
+	unsigned int icon_pixel_bytes;
+	unsigned int icon_line_bytes;
 	int offset;
 	
 	width = *icon++;
 	height = *icon++;
+	display_width = width * 2; /* Two characters per icon pixel. */
+
+	icon_pixel_bytes = 1;
+	if (is_truecolor_term())
+	    icon_pixel_bytes = 25; /* 16 control characters, and up to 9 chars of RGB. */
+	else if (is_utf8_locale())
+	    icon_pixel_bytes = 3; /* Up to 3 bytes per character in that mode. */
+
+	/* Initial tab, pixels, and newline. */
+	icon_line_bytes = 8 + display_width * icon_pixel_bytes + 1;
 
 	offset = (tail - result);
 	
-	alloced += 80;				/* For the header */
-	alloced += (width*4 + 8) * height;	/* For the rows (plus padding) */
+	alloced += 80;				/* For the header, final newline, color reset */
+	alloced += icon_line_bytes * height;	/* For the rows */
 	
 	result = realloc (result, alloced);
 	if (!result)
@@ -785,18 +813,18 @@ Format_Icons (const unsigned long *icon, int len)
 
 	tail += sprintf (tail, "\tIcon (%lu x %lu):\n", width, height);
 
-	if (width > 144 || height > 144)
+	if ((display_width + 8) > term_width || height > 144)
 	{
-	    tail += sprintf (tail, "\t(not shown)");
+	    tail += sprintf (tail, "\t(not shown)\n");
 	    icon += width * height;
 	    continue;
 	}
 	
-	for (h = 0; h < height; ++h)
+	for (unsigned int h = 0; h < height; ++h)
 	{
 	    tail += sprintf (tail, "\t");
 	    
-	    for (w = 0; w < width; ++w)
+	    for (unsigned int w = 0; w < width; ++w)
 	    {
 		unsigned char a, r, g, b;
 		unsigned long pixel = *icon++;
@@ -812,7 +840,17 @@ Format_Icons (const unsigned long *icon, int len)
 					   (587 * (g / 255.0)) +
 					   (114 * (b / 255.0))));
 
-		if (is_utf8_locale())
+		if (is_truecolor_term())
+		{
+		    float opacity = a / 255.0;
+
+		    r = r * opacity;
+		    g = g * opacity;
+		    b = b * opacity;
+
+		    tail += sprintf (tail, "\033[38;2;%d;%d;%dm\342\226\210\342\226\210", r, g, b );
+		}
+		else if (is_utf8_locale())
 		{
 		    static const char palette[][4] =
 		    {
@@ -826,7 +864,7 @@ Format_Icons (const unsigned long *icon, int len)
 
 		    idx = (brightness * ((sizeof (palette)/sizeof(palette[0])) - 1)) / 1000;
 
-		    tail += sprintf (tail, "%s", palette[idx]);
+		    tail += sprintf (tail, "%s%s", palette[idx], palette[idx]);
 		}
 		else
 		{
@@ -837,11 +875,16 @@ Format_Icons (const unsigned long *icon, int len)
 		    idx = (brightness * (sizeof(palette) - 2)) / 1000;
 		    
 		    *tail++ = palette[idx];
+		    *tail++ = palette[idx];
 		}
 	    }
 
 	    tail += sprintf (tail, "\n");
 	}
+
+	/* Reset colors. */
+	if (is_truecolor_term())
+	    tail += sprintf (tail, "\033[0m");
 
 	tail += sprintf (tail, "\n");
     }
@@ -853,7 +896,7 @@ static const char *
 Format_Len_Text (const char *string, int len, Atom encoding)
 {
     XTextProperty textprop;
-    char **list;
+    char **start_list;
     int count;
 
     /* Try to convert to local encoding. */
@@ -861,7 +904,8 @@ Format_Len_Text (const char *string, int len, Atom encoding)
     textprop.format = 8;
     textprop.value = (unsigned char *) string;
     textprop.nitems = len;
-    if (XmbTextPropertyToTextList(dpy, &textprop, &list, &count) == Success) {
+    if (XmbTextPropertyToTextList(dpy, &textprop, &start_list, &count) == Success) {
+	char **list = start_list;
 	_buf_ptr = _formatting_buffer;
 	_buf_len = MAXSTR;
 	*_buf_ptr++ = '"';
@@ -895,6 +939,7 @@ Format_Len_Text (const char *string, int len, Atom encoding)
 		_buf_len -= 4;
 	    }
 	}
+	XFreeStringList(start_list);
 	*_buf_ptr++ = '"';
 	*_buf_ptr++ = '\0';
 	return _formatting_buffer;
@@ -934,12 +979,10 @@ static int
 is_valid_utf8 (const char *string, int len)
 {
     unsigned long codepoint = 0;
-    int rem, i;
-    unsigned char c;
+    int rem = 0;
 
-    rem = 0;
-    for (i = 0; i < len; i++) {
-	c = (unsigned char) string[i];
+    for (int i = 0; i < len; i++) {
+	 unsigned char c = (unsigned char) string[i];
 
 	/* Order of type check:
 	 *   - Single byte code point
@@ -981,12 +1024,12 @@ is_valid_utf8 (const char *string, int len)
 static const char *
 Format_Len_Unicode (const char *string, int len)
 {
-    char *data;
-    const char *result, *error;
-
     int validity = is_valid_utf8(string, len);
 
     if (validity != UTF8_VALID) {
+	char *data;
+	const char *result, *error;
+
 	switch (validity) {
 	  case UTF8_FORBIDDEN_VALUE:
 	    error = "<Invalid UTF-8 string: Forbidden value> "; break;
@@ -1104,9 +1147,7 @@ Format_Thunk_I (thunk *thunks, const char *format, int i)
 static long
 Mask_Word (thunk *thunks, const char *format)
 {
-    int j;
-
-    for (j = 0; j  < (int)strlen(format); j++)
+    for (int j = 0; j  < (int)strlen(format); j++)
 	if (Get_Format_Char(format, j) == 'm')
 	    return thunks[j].value;
     return 0;
@@ -1247,15 +1288,15 @@ Scan_Exp (const char *string, thunk *thunks, const char *format, long *value)
 static const char *
 Handle_Question_Mark (const char *dformat, thunk *thunks, const char *format)
 {
-    long true;
+    long is_true;
 
-    dformat = Scan_Exp(dformat, thunks, format, &true);
+    dformat = Scan_Exp(dformat, thunks, format, &is_true);
 
     if (*dformat != '(')
 	Fatal_Error("Bad conditional: '(' expected: %s.", dformat);
     ++dformat;
 
-    if (!true)
+    if (!is_true)
 	dformat = Skip_Past_Right_Paren(dformat);
 
     return dformat;
@@ -1360,13 +1401,13 @@ Break_Down_Property (const char *pointer, int length, Atom type, const char *for
     thunk *thunks;
     thunk t = {0};
     int i;
-    char format_char;
 
     thunks = Create_Thunk_List();
     i = 0;
 
     while (length >= size/8) {
-	format_char = Get_Format_Char(format, i);
+	char format_char = Get_Format_Char(format, i);
+
 	if (format_char == 's' || format_char == 'u')
 	    t.value = Extract_Len_String(&pointer,&length,size,&t.extra_value);
 	else if (format_char == 't') {
@@ -1404,11 +1445,9 @@ static const char *
 Get_Font_Property_Data_And_Type (Atom atom,
                                  long *length, Atom *type, int *size)
 {
-    int i;
-	
     *type = None;
 	
-    for (i = 0; i < font->n_properties; i++)
+    for (int i = 0; i < font->n_properties; i++)
 	if (atom == font->properties[i].name) {
 	    _font_prop = font->properties[i].card32;
 	    *length = sizeof(long);
@@ -1465,7 +1504,7 @@ Get_Window_Property_Data_And_Type (Atom atom,
 static const char *
 Get_Property_Data_And_Type (Atom atom, long *length, Atom *type, int *size)
 {
-    if (target_win == -1)
+    if (target_win == (Window) -1)
 	return Get_Font_Property_Data_And_Type(atom, length, type, size);
     else
 	return Get_Window_Property_Data_And_Type(atom, length, type, size);
@@ -1516,23 +1555,21 @@ Show_Prop (const char *format, const char *dformat, const char *prop)
 static void
 Show_All_Props (void)
 {
-    Atom *atoms, atom;
-    const char *name;
-    int count, i;
-
-    if (target_win != -1) {
-	atoms = XListProperties(dpy, target_win, &count);
-	for (i = 0; i < count; i++) {
-	    name = Format_Atom(atoms[i]);
+    if (target_win != (Window) -1) {
+	int count;
+	Atom *atoms = XListProperties(dpy, target_win, &count);
+	for (int i = 0; i < count; i++) {
+	    const char *name = Format_Atom(atoms[i]);
 	    Show_Prop(NULL, NULL, name);
 	}
 	XFree(atoms);
-    } else
-	for (i = 0; i < font->n_properties; i++) {
-	    atom = font->properties[i].name;
-	    name = Format_Atom(atom);
+    } else {
+	for (int i = 0; i < font->n_properties; i++) {
+	    Atom atom = font->properties[i].name;
+	    const char *name = Format_Atom(atom);
 	    Show_Prop(NULL, NULL, name);
 	}
+    }
 }
 
 static thunk *
@@ -1578,20 +1615,20 @@ Handle_Prop_Requests (int argc, char **argv)
 }
 
 static void
-Remove_Property (Display *dpy, Window w, const char *propname)
+Remove_Property (Display *display, Window w, const char *propname)
 {
-    Atom id = XInternAtom (dpy, propname, True);
+    Atom id = XInternAtom (display, propname, True);
 
     if (id == None) {
 	fprintf (stderr, "%s:  no such property \"%s\"\n",
 		 program_name, propname);
 	return;
     }
-    XDeleteProperty (dpy, w, id);
+    XDeleteProperty (display, w, id);
 }
 
 static void
-Set_Property (Display *dpy, Window w, const char *propname, const char *value)
+Set_Property (Display *display, Window w, const char *propname, const char *value)
 {
     Atom atom;
     const char *format;
@@ -1623,7 +1660,7 @@ Set_Property (Display *dpy, Window w, const char *propname, const char *value)
       case 'u':
 	if (size != 8)
 	    Fatal_Error("can't use format character 'u' with any size except 8.");
-	type = XInternAtom(dpy, "UTF8_STRING", False);
+	type = XInternAtom(display, "UTF8_STRING", False);
 	data = (const unsigned char *) value;
 	nelements = strlen(value);
 	break;
@@ -1631,7 +1668,7 @@ Set_Property (Display *dpy, Window w, const char *propname, const char *value)
 	XTextProperty textprop;
 	if (size != 8)
 	    Fatal_Error("can't use format character 't' with any size except 8.");
-	if (XmbTextListToTextProperty(dpy, (char **) &value, 1,
+	if (XmbTextListToTextProperty(display, (char **) &value, 1,
 				      XStdICCTextStyle, &textprop) != Success) {
 	    fprintf(stderr, "cannot convert %s argument to STRING or COMPOUND_TEXT.\n", propname);
 	    return;
@@ -1761,7 +1798,7 @@ Set_Property (Display *dpy, Window w, const char *propname, const char *value)
 	Fatal_Error("bad format character: %c", format_char);
     }
 
-    XChangeProperty(dpy, target_win, atom, type, size, PropModeReplace,
+    XChangeProperty(display, target_win, atom, type, size, PropModeReplace,
 		    data, nelements);
 }
 
@@ -1771,11 +1808,12 @@ Set_Property (Display *dpy, Window w, const char *propname, const char *value)
  *
  */
 
-void
-usage (const char *errmsg)
+static void
+print_help (void)
 {
     static const char *help_message =
 "where options include:\n"
+"    -help                          print out a summary of command line options\n"
 "    -grammar                       print out full grammar for command line\n"
 "    -display host:dpy              the X server to contact\n"
 "    -id id                         resource id of window to examine\n"
@@ -1795,17 +1833,30 @@ usage (const char *errmsg)
 
     fflush (stdout);
 
-    if (errmsg != NULL)
-	fprintf (stderr, "%s: %s\n\n", program_name, errmsg);
-
     fprintf (stderr,
 	     "usage:  %s [-options ...] [[format [dformat]] atom] ...\n\n", 
 	     program_name);
     fprintf (stderr, "%s\n", help_message);
+}
+
+static inline void _X_NORETURN _X_COLD
+help (void)
+{
+	print_help();
+	exit(0);
+}
+
+void _X_NORETURN _X_COLD
+usage (const char *errmsg)
+{
+    if (errmsg != NULL)
+	fprintf (stderr, "%s: %s\n\n", program_name, errmsg);
+
+    print_help();
     exit (1);
 }
 
-static void
+static void _X_NORETURN _X_COLD
 grammar (void)
 {
     printf ("Grammar for xprop:\n\n");
@@ -1835,7 +1886,7 @@ Parse_Format_Mapping (int *argc, char ***argv)
 #define ARGC (*argc)
 #define ARGV (*argv)
 #define OPTION ARGV[0]
-#define NXTOPT if (++ARGV, --ARGC==0) usage("insufficent arguments for -format")
+#define NXTOPT if (++ARGV, --ARGC==0) usage("insufficient arguments for -format")
     char *type_name, *format, *dformat;
   
     NXTOPT; type_name = OPTION;
@@ -1860,9 +1911,9 @@ Parse_Format_Mapping (int *argc, char ***argv)
 
 static int spy = 0;
 
-static int (*old_error_handler)(Display *dpy, XErrorEvent *ev);
+static int (*old_error_handler)(Display *display, XErrorEvent *ev);
 
-static int spy_error_handler(Display *dpy, XErrorEvent *ev)
+static int spy_error_handler(Display *display, XErrorEvent *ev)
 {
     if (ev->error_code == BadWindow || ev->error_code == BadMatch) {
 	/* Window was destroyed */
@@ -1871,7 +1922,7 @@ static int spy_error_handler(Display *dpy, XErrorEvent *ev)
     }
 
     if (old_error_handler)
-	return old_error_handler(dpy, ev);
+	return old_error_handler(display, ev);
 
     return 0;
 }
@@ -1887,6 +1938,13 @@ main (int argc, char **argv)
     Bool frame_only = False;
     int n;
     char **nargv;
+
+#ifdef TIOCGWINSZ
+    struct winsize ws;
+    ws.ws_col = 0;
+    if (ioctl(STDIN_FILENO, TIOCGWINSZ, &ws) != -1 && ws.ws_col != 0)
+	term_width = ws.ws_col;
+#endif
 
     INIT_NAME;
 
@@ -1918,6 +1976,10 @@ main (int argc, char **argv)
     while (argv++, --argc>0 && **argv == '-') {
 	if (!strcmp(argv[0], "-"))
 	    continue;
+	if (!strcmp(argv[0], "-help")) {
+	    help ();
+	    /* NOTREACHED */
+	}
 	if (!strcmp(argv[0], "-grammar")) {
 	    grammar ();
 	    /* NOTREACHED */
@@ -1946,7 +2008,7 @@ main (int argc, char **argv)
 	if (!strcmp(argv[0], "-font")) {
 	    if (++argv, --argc == 0) usage("-font requires an argument");
 	    font = Open_Font(argv[0]);
-	    target_win = -1;
+	    target_win = (Window) -1;
 	    continue;
 	}
 	if (!strcmp(argv[0], "-remove")) {
@@ -1959,7 +2021,7 @@ main (int argc, char **argv)
 	}
 	if (!strcmp(argv[0], "-set")) {
 	    thunk t = {0};
-	    if (argc < 3) usage("insufficent arguments for -set");
+	    if (argc < 3) usage("insufficient arguments for -set");
 	    t.propname = argv[1];
 	    t.extra_value = argv[2];
 	    argv += 3; argc -= 3;
@@ -1996,7 +2058,7 @@ main (int argc, char **argv)
     if (remove_props != NULL) {
 	int count;
 
-	if (target_win == -1)
+	if (target_win == (Window) -1)
 	    Fatal_Error("-remove works only on windows, not fonts");
 
 	count = remove_props->thunk_count;
@@ -2007,7 +2069,7 @@ main (int argc, char **argv)
     if (set_props != NULL) {
 	int count;
 
-	if (target_win == -1)
+	if (target_win == (Window) -1)
 	    Fatal_Error("-set works only on windows, not fonts");
 
 	count = set_props->thunk_count;
@@ -2023,7 +2085,7 @@ main (int argc, char **argv)
 
     props = Handle_Prop_Requests(argc, argv);
 
-    if (spy && target_win != -1) {
+    if (spy && target_win != (Window) -1) {
 	XEvent event;
 	const char *format, *dformat;
 	
@@ -2040,7 +2102,7 @@ main (int argc, char **argv)
 	    if (props) {
 		int i;
 		for (i = 0; i < props->thunk_count; i++)
-		    if (props[i].value == event.xproperty.atom)
+		    if (props[i].value == (long) event.xproperty.atom)
 			break;
 		if (i >= props->thunk_count)
 		    continue;

@@ -22,6 +22,7 @@
 SUBDIRS = man
 bin_PROGRAMS = xfontsel
 
+AM_CPPFLAGS = -D_CONST_X_STRING
 AM_CFLAGS = $(XFONTSEL_CFLAGS) $(CWARNFLAGS)
 xfontsel_LDADD = $(XFONTSEL_LIBS)
 
@@ -50,3 +51,16 @@ ChangeLog:
 	$(CHANGELOG_CMD)
 
 dist-hook: ChangeLog INSTALL
+
+EXTRA_DIST = README.md
+
+if USE_GETTEXT
+AM_CPPFLAGS = -DLOCALEDIR='"$(LOCALEDIR)"'
+
+noinst_DATA = xfontsel.po
+
+xfontsel.po: $(xfontsel_SOURCES:%=$(srcdir)/%)
+	$(AM_V_GEN)xgettext -d xfontsel -c -n $(xfontsel_SOURCES:%=$(srcdir)/%)
+
+CLEANFILES = xfontsel.po
+endif

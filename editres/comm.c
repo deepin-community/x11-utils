@@ -32,6 +32,10 @@ from The Open Group.
  * being edited.
  */
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include <X11/Intrinsic.h>
 #include <X11/StringDefs.h>	/* Get standard string definitions. */
 #include <X11/Xatom.h>
@@ -51,8 +55,6 @@ from The Open Group.
 
 static Atom atom_comm, atom_command, atom_resource_editor, atom_client_value;
 static Atom atom_editres_protocol;
-
-extern Widget CM_entries[NUM_CM_ENTRIES], TM_entries[NUM_TM_ENTRIES];
 
 static void ClientTimedOut ( XtPointer data, XtIntervalId * id );
 static void TellUserAboutMessage ( Widget label, ResCommand command );
@@ -180,7 +182,7 @@ GetClientWindow(Widget w, int *x, int *y)
 
 /* ARGSUSED */
 void
-SetCommand(Widget w, ResCommand command, char *msg)
+SetCommand(Widget w, ResCommand command, String msg)
 {
   XClientMessageEvent client_event;
   Display * dpy = XtDisplay(w);
@@ -254,7 +256,8 @@ SetCommand(Widget w, ResCommand command, char *msg)
 static void
 TellUserAboutMessage(Widget label, ResCommand command)
 {
-    char msg[BUFSIZ], *str;
+    char msg[BUFSIZ];
+    const char *str;
 
     switch(command) {
     case LocalSendWidgetTree:
@@ -319,7 +322,7 @@ ConvertCommand(Widget w, Atom *selection, Atom *target, Atom *type_ret,
 static void
 SelectionDone(Widget w, Atom *sel, Atom *targ)
 {
-    /* Keep the toolkit from automaticaly freeing the selection value */
+    /* Keep the toolkit from automatically freeing the selection value */
 }
 
 
@@ -428,8 +431,8 @@ GetClientValue(Widget w, XtPointer data, Atom *selection, Atom *type,
     case ProtocolMismatch:
 	error_str = ProtocolFailure(stream);
 	--global_effective_protocol_version;
-	/* normaly protocol version is reset to current during a SendWidgetTree
-         * request, however, after a protocol failure this is skiped once for
+        /* normally protocol version is reset to current during a SendWidgetTree
+         * request, however, after a protocol failure this is skipped once for
          * a retry.
          */
 	reset_protocol_level = False;
@@ -687,7 +690,7 @@ BuildEvent(ProtocolStream *stream)
 			goto done;
 		}
 		else {
-		    if (!(_XEditResGetBoolean(stream, &(info->visable)) &&
+		    if (!(_XEditResGetBoolean(stream, &(info->visible)) &&
 			  _XEditResGetSigned16(stream, &(info->x)) &&
 			  _XEditResGetSigned16(stream, &(info->y)) &&
 			  _XEditResGet16(stream, &(info->width)) &&
@@ -925,4 +928,3 @@ GetNewIdent(void)
 
     return(ident++);
 }
-

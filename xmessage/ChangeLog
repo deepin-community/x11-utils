@@ -1,3 +1,103 @@
+commit 3b4db0f96b58076b17d1ae20b4c6a38a522dca58
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Sun Mar 3 14:31:25 2024 -0800
+
+    xmessage 1.0.7
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit 3b86420d209d4858c310748215da31672783f64a
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Sat Feb 11 16:15:13 2023 -0800
+
+    configure: Use AC_SYS_LARGEFILE to enable large file support
+    
+    While files displayed by xmessage should never be more than 2gb in size,
+    they may be stored on filesystems with large inodes (or in the future,
+    dates past 2038).
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit a5da3e6589d6bfcdf4ed44cab0b1fac438224b60
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Sat Feb 11 16:11:38 2023 -0800
+
+    Add -version option
+    
+    Also updates -help option to not require successfully opening a display
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit a221346284192af4784a1140aef9f72e72e1167f
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Sat Feb 11 15:59:10 2023 -0800
+
+    Print which arguments were unknown before giving usage message
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit 52d1690c3e1291f7d7be6b4cc39925e3fe4381e3
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Tue Jul 12 10:37:50 2022 -0700
+
+    xmessage 1.0.6
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit f8be5016e618dcd650540b4cea5f710fd9a16e00
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Sat Apr 16 16:01:36 2022 -0700
+
+    gitlab CI: stop requiring Signed-off-by in commits
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit a2d2c371a11302d8df204527119c6ec91cc9e898
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Sat Apr 16 15:58:42 2022 -0700
+
+    Stop casting function return values to void
+    
+    This was used to make lint stop warning that you weren't checking
+    the return value.
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit 55cc3615df9045684c70293dcfcbaa26371e46ad
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Sat Apr 16 15:57:02 2022 -0700
+
+    Stop casting arguments to free()
+    
+    This was needed for some pre-ANSI systems that declared free() to take
+    'char *' instead of 'void *' arguments, but hasn't been needed in decades.
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit cda8cd860d7cbbcab8da5d0bb28b0e55b35c000f
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Tue Dec 7 12:29:45 2021 -0800
+
+    Build xz tarballs instead of bzip2
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit bed195ac430ffa991e9e5c89ad447c6efc1ed2c8
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Tue Dec 7 12:29:42 2021 -0800
+
+    gitlab CI: add a basic build test
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit e315069848aea3aaeb72bd3bc9a5d0bdb1242ed7
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Wed Nov 21 17:15:50 2018 -0800
+
+    Update configure.ac bug URL for gitlab migration
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
 commit f1e22dc070daa73857ff2fd951424b9d1ef31a54
 Author: Alan Coopersmith <alan.coopersmith@oracle.com>
 Date:   Fri Mar 9 18:00:17 2018 -0800

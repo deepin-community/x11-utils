@@ -1,3 +1,231 @@
+commit 400dbeda3b1e43f7815f596679bd785e7dbb7a4d
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Sat Feb 3 14:55:48 2024 -0800
+
+    xprop 1.2.7
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit 0d2837162ef0e54647485eee2ba4b88012fbb1b4
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Thu Dec 7 18:09:54 2023 -0800
+
+    Fix C23 build by renaming variable 'true'
+    
+    Reported by gcc 13.2 with -std=gnu2x:
+    
+    xprop.c: In function ‘Handle_Question_Mark’:
+    xprop.c:1291:10: error: expected identifier or ‘(’ before ‘true’
+     1291 |     long true;
+          |          ^~~~
+    xprop.c:1293:49: error: lvalue required as unary ‘&’ operand
+     1293 |     dformat = Scan_Exp(dformat, thunks, format, &true);
+          |                                                 ^
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit 6d5cb0110b8b21ce94a52993e6e175266a4153fb
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Sat Dec 3 14:29:46 2022 -0800
+
+    xprop 1.2.6
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit 6e2ab69bc4e339c555b03037db3c073d1a5fa965
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Tue Nov 8 19:04:05 2022 -0800
+
+    Variable scope reductions as suggested by cppcheck
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit b14f4fa558db643d1462e9346f138122cb63ce28
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Tue Nov 8 18:48:44 2022 -0800
+
+    Resolve many gcc -Wsign-compare warnings
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit f7b1a3f4fec15a0f0a0cd95308f29310adb023a4
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Tue Nov 8 18:34:35 2022 -0800
+
+    Rename "dpy" function arguments to "display" to avoid shadowing global
+    
+    Clears many gcc -Wshadow warnings
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit 07f869b9024847a98d0593a3d05cff122ae7c8eb
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Tue Nov 8 18:24:23 2022 -0800
+
+    Declare help() and print_help() as static
+    
+    Resolves gcc -Wmissing-prototypes warnings
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit 7ae07138436c9700c65192c4fbc3015819999666
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Tue Nov 8 18:23:21 2022 -0800
+
+    Mark help(), usage(), and grammar() with _X_NORETURN _X_COLD
+    
+    Resolves gcc -Wsuggest-attribute=noreturn warning
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit 55c9f8d4b5caf48c1d79252340e1750e160ded1e
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Thu Jul 28 17:30:21 2022 -0700
+
+    gitlab CI: stop requiring Signed-off-by in commits
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit c36de8de9b2a5832f848259583631310c04b3715
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Tue Dec 7 13:30:04 2021 -0800
+
+    Build xz tarballs instead of bzip2
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit d7ec12530b4e45adb6f1c88e92fb25b3ff172c79
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Tue Dec 7 13:30:01 2021 -0800
+
+    gitlab CI: add a basic build test
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit ca85da483ab1817ed449fccf3e54e8280112bdbf
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Sun Nov 28 09:50:10 2021 -0800
+
+    Fix spelling/wording issues
+    
+    Found by using:
+        codespell --builtin clear,rare,usage,informal,code,names
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit ec5aeaddddec4b4bdb532451f5a2bc8e3b7148a9
+Author: Keith Packard <keithp@keithp.com>
+Date:   Thu Nov 19 16:24:50 2020 -0800
+
+    xprop 1.2.5
+    
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+
+commit 09f145bcf13a08a05daf85f75444741ffb78a2bb
+Author: Keith Packard <keithp@keithp.com>
+Date:   Tue Nov 17 15:22:49 2020 -0800
+
+    Check return value from ioctl(TIOCGWINSZ)
+    
+    Make sure the function succeeded before looking at the return value.
+    
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+
+commit 95025ea167d87998ef0bd3ed25dfaa2c179cf712
+Author: Keith Packard <keithp@keithp.com>
+Date:   Tue Nov 17 15:19:46 2020 -0800
+
+    Correct icon buffer width computation for truecolor terminals
+    
+    Fix the test when computing size necessary for true color output to
+    use 'is_truecolor_term' instead of 'is_utf8_locale'. A non-utf8 locale
+    with a true color terminal would have under-allocated the
+    buffer. Also, check for truecolor first to match the output code.
+    
+    This doesn't fix the fact that this code over-allocates by a factor of
+    two in this case, but that at least won't cause memory corruption.
+    
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+
+commit 706ed45e0b58219bc623b8c5f963777a120d2844
+Author: Keith Packard <keithp@keithp.com>
+Date:   Tue Nov 17 15:18:46 2020 -0800
+
+    Free string list returned from XmbTextPropertyToTextList
+    
+    Make sure we clean up after this call by using the XFreeStringList
+    function.
+    
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+
+commit a30ed360fe56a556072e1fc551ffbe6797642227
+Author: Keith Packard <keithp@keithp.com>
+Date:   Tue Nov 17 15:16:00 2020 -0800
+
+    Make output with unknown width terminal the same as old code
+    
+    Auto-detecting the terminal width and eliding icons that are too wide
+    is a nice new feature, but we shouldn't change the behaviour when that
+    width is not detectable (e.g., when output to a file). Change the
+    default terminal width from 80 to 144 + 8 to get back to the previous
+    output format.
+    
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+
+commit 2c753b5c1622afa662a4f4334dd947667f37a803
+Author: Pierre-Loup A. Griffais <git@plagman.net>
+Date:   Sat Jun 6 15:31:34 2020 -0700
+
+    Fix formatting of back-to-back not shown icons.
+    
+    Otherwise looks like this:
+    
+    Icon (48 x 48):
+    (not shown)     Icon (64 x 64):
+    (not shown)     Icon (128 x 128):
+    (not shown)
+
+commit d41b28bfa8f5bf5155082167fb004e3c709b52ae
+Author: Pierre-Loup A. Griffais <git@plagman.net>
+Date:   Sat Jun 6 15:19:10 2020 -0700
+
+    Support true color output for icons if the terminal advertises it.
+
+commit e25ae1d9b03a84c3ca825745156af2a7045f04e5
+Author: Pierre-Loup A. Griffais <git@plagman.net>
+Date:   Sat Jun 6 15:12:07 2020 -0700
+
+    Fix aspect ratio for icon display by using two characters per icon pixel.
+
+commit 33042c835583b77c31f38f33e5560e596a416662
+Author: Pierre-Loup A. Griffais <git@plagman.net>
+Date:   Sat Jun 6 15:03:08 2020 -0700
+
+    Break down memory allocation logic and fix overallocating for UTF8.
+    
+    We need up to 3 bytes per character in UTF8 mode, not 4.
+
+commit 540c5674722c1f569e9089db14ef07554ef48c16
+Author: Pierre-Loup A. Griffais <git@plagman.net>
+Date:   Sat Jun 6 14:45:25 2020 -0700
+
+    Don't display icons if they would line-wrap.
+    
+    Assuming we can query the terminal width.
+
+commit 632461227686bb31004fd9cf823bcf1645e7a563
+Author: Jason Nader <jason.nader@protonmail.com>
+Date:   Sat Apr 11 22:29:47 2020 +0900
+
+    Add missing `-help` function
+    
+    `-help` is mentioned in the manpages, but actually running `xprop -help`
+    results in xprop exiting with status 1 as it doesn't recognise the option.
+    This has been the source of major confusion here:
+    https://github.com/franciscolourenco/done/issues/77#issuecomment-612404448
+    
+    Signed-off-by: Jason Nader <jason.nader@protonmail.com>
+
 commit e81642bacc58388c223bc157f37c2311a7dbe070
 Author: Alan Coopersmith <alan.coopersmith@oracle.com>
 Date:   Sat Mar 9 20:31:09 2019 -0800

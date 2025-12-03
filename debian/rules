@@ -10,9 +10,10 @@
 # set this to the name of the main shlib's binary package
 PACKAGE = x11-utils
 
-# This package contains multiple modules as shipped by upstream. Each module is # contained in a subdirectory in the root dir of the package. You must list each
+# This package contains multiple modules as shipped by upstream. Each module is
+# contained in a subdirectory in the root dir of the package. You must list each
 # subdirectory explicitly so that the build system knows what to build
-DEF_SUBDIRS=appres editres listres luit viewres xdpyinfo xdriinfo xev xfd xfontsel xkill xlsatoms xlsclients xlsfonts xmessage xprop xvinfo xwininfo
+DEF_SUBDIRS=appres editres listres viewres xdpyinfo xdriinfo xev xfd xfontsel xkill xlsatoms xlsclients xlsfonts xmessage xprop xvinfo xwininfo
 SUBDIRS=$(DEF_SUBDIRS)
 CONFIG_STAMPS = $(patsubst %,configure-%-stamp,$(SUBDIRS))
 BUILD_STAMPS = $(patsubst %,build-%-stamp,$(SUBDIRS))
