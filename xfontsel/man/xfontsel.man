@@ -42,13 +42,11 @@
 xfontsel \- point and click selection of X11 font names
 .SH SYNTAX
 .PP
-\fBxfontsel\fP [-\fItoolkitoption\fP ...]
-[\fB-pattern \fIfontname\fP]
-[\fB-print\fP]
-[\fB-sample \fItext\fP]
-[\fB-sample16 \fItext16\fP]
-[\fB-sampleUCS \fItextUCS\fP]
-[\fB-scaled\fP]
+.nf
+\fBxfontsel\fP [-\fItoolkitoption\fP ...] [\fB-help\fP] [\fB-pattern\fP \fIfontname\fP] [\fB-print\fP]
+         [\fB-sample\fP \fItext\fP] [\fB-sample16\fP \fItext16\fP] [\fB-sampleUCS\fP \fItextUCS\fP]
+         [\fB-scaled\fP] [\fB-version\fP]
+.fi
 .PP
 .SH DESCRIPTION
 .PP
@@ -84,6 +82,12 @@ CHARSET_REGISTRY of ISO10646, overriding the default.
 .PP
 The \fB-scaled\fP option enables the ability to select scaled fonts
 at arbitrary pixel or point sizes.
+.PP
+The \fB\-help\fP option specifies that \fIxfontsel\fP should
+print a usage message and exit.
+.PP
+The \fB\-version\fP option specifies that \fIxfontsel\fP should
+print version info and exit.
 .PP
 .SH INTERACTIONS
 .PP
@@ -215,10 +219,6 @@ parsed.  An error message indicating a missing menu is printed
 to stderr but otherwise nothing bad (or good) happens.
 .PP
 The average-width menu is too large to be useful.
-.SH COPYRIGHT
-Copyright 1989, 1991,  X Consortium
-.PP
-See \fIX(__miscmansuffix__)\fP for a full statement of rights and permissions.
 .SH AUTHOR
 .PP
 Ralph R. Swick, Digital Equipment Corporation/MIT Project Athena

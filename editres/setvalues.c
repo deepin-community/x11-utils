@@ -25,6 +25,10 @@ in this Software without prior written authorization from The Open Group.
  * Author:  Chris D. Peterson, MIT X Consortium
  */
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include <X11/Intrinsic.h>
 #include <X11/StringDefs.h>
 #include <X11/Xresource.h>
@@ -96,7 +100,7 @@ GetResourceValueForSetValues(WNode *node, unsigned short *size)
 
     /*
      * This makes sure that exactly the same thing happens during a set
-     * values, that would happend of we were to insert this value into
+     * values, that would happen if we were to insert this value into
      * the resource database.
      */
 

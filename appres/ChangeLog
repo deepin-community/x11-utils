@@ -1,3 +1,113 @@
+commit 07075bda9cd863fa10f47993271dbe7e6e256d71
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Sun Jun 16 10:32:47 2024 -0700
+
+    appres 1.0.7
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+    Part-of: <https://gitlab.freedesktop.org/xorg/app/appres/-/merge_requests/5>
+
+commit b297a7738a02b3fb7a8842e054c4068195038c38
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Sun Apr 7 13:58:13 2024 -0700
+
+    meson: Add a meson build system
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+    Part-of: <https://gitlab.freedesktop.org/xorg/app/appres/-/merge_requests/4>
+
+commit 2b5316265c5ce6c7dbd8f726826d5d5a7385febd
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Sun Apr 7 12:53:58 2024 -0700
+
+    configure: use @-style substitutions for man pages instead of __-style
+    
+    Moves substitution of variables from Makefile.am to configure.ac
+    in preparation for allowing meson.build to do the same.
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+    Part-of: <https://gitlab.freedesktop.org/xorg/app/appres/-/merge_requests/4>
+
+commit 888aece87c0af4e0b326d4d92fcc079f249a7f73
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Thu Feb 9 12:25:47 2023 -0800
+
+    Accept -help, -version, & -V without requiring display to open
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit 163ba88d2d98369df78c2700b634cf62012f8c31
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Thu Jul 28 17:30:21 2022 -0700
+
+    gitlab CI: stop requiring Signed-off-by in commits
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit 55db329c8363e6ca969c27652f0da714364065bd
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Sun Apr 3 11:54:44 2022 -0700
+
+    appres 1.0.6
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit aa7250cb209b31a4a8e78b53cd54b41f71a5c986
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Fri Dec 3 14:16:11 2021 -0800
+
+    gitlab CI: add a basic build test
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit 78b86cfef4eb8a493e8238969bca9e1e9d111803
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Fri Dec 3 14:14:38 2021 -0800
+
+    Build xz tarballs instead of bzip2
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit 73e835828184af9230db2176579a4ff74da7785b
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Sat Jun 1 18:33:51 2019 -0700
+
+    Use _CONST_X_STRING to make libXt declare String as const char *
+    
+    Clears gcc 7.3 warnings of:
+    
+    appres.c: In function ‘main’:
+    appres.c:36:16: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+     #define NONAME "-AppResTest-"
+                    ^
+    appres.c:126:20: note: in expansion of macro ‘NONAME’
+         String iname = NONAME, cname = NONAME;
+                        ^~~~~~
+    appres.c:36:16: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+     #define NONAME "-AppResTest-"
+                    ^
+    appres.c:126:36: note: in expansion of macro ‘NONAME’
+         String iname = NONAME, cname = NONAME;
+                                        ^~~~~~
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit 60be69492ae346a89c5e510dfa6af8495c4fa078
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Wed Nov 21 16:38:21 2018 -0800
+
+    Update configure.ac bug URL for gitlab migration
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+commit ac89dfca6a91039261d68cdcc76fc4027f6e7458
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Fri Nov 16 19:16:28 2018 -0800
+
+    Update README for gitlab migration
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
 commit ce712a3ab96eb8127d9eda4600d99e6b83bd99db
 Author: Alan Coopersmith <alan.coopersmith@oracle.com>
 Date:   Sun Mar 4 19:28:31 2018 -0800

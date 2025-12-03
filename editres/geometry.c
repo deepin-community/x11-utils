@@ -25,6 +25,10 @@ in this Software without prior written authorization from The Open Group.
  * Author:  Chris D. Peterson, MIT X Consortium
  */
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include <X11/Intrinsic.h>
 #include <X11/StringDefs.h>
 #include <X11/Shell.h>
@@ -204,7 +208,7 @@ AddToFlashList(TreeInfo *tree_info, GetGeomInfo *geom_info, char **errors)
 	return;
     }
 
-    if (!geom_info->visable) {
+    if (!geom_info->visible) {
 	snprintf(buf, sizeof(buf), "%s(0x%lx) - This widget is not mapped\n",
 		node->name, node->id);
 	AddString(errors, buf);

@@ -31,6 +31,35 @@ Author:	Ralph R. Swick, DEC/MIT Project Athena
 Modified: Mark Leisher <mleisher@crl.nmsu.edu> to deal with UCS sample text.
 */
 
+/*
+ * Copyright (c) 2000, 2022, Oracle and/or its affiliates.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice (including the next
+ * paragraph) shall be included in all copies or substantial portions of the
+ * Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ *
+ * Modifications by Jay Hobson (Sun Microsystems) to internationalize messages
+ */
+
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <X11/Intrinsic.h>
@@ -50,7 +79,15 @@ Modified: Mark Leisher <mleisher@crl.nmsu.edu> to deal with UCS sample text.
 #include <X11/Xmu/Atoms.h>
 #include <X11/Xmu/StdSel.h>
 #include <X11/Xfuncs.h>
+#include <X11/Xlib.h>
 #include "ULabel.h"
+
+#ifdef USE_GETTEXT
+# include <locale.h>	/* setlocale()	*/
+# include <libintl.h>	/* gettext(), textdomain(), etc. */
+#else
+# define gettext(a) (a)
+#endif
 
 #define MIN_APP_DEFAULTS_VERSION 1
 #define FIELD_COUNT 14
@@ -67,7 +104,8 @@ Modified: Mark Leisher <mleisher@crl.nmsu.edu> to deal with UCS sample text.
 void GetFontNames(XtPointer closure);
 Boolean Matches(String pattern, String fontName, Boolean fields[], int *maxfields);
 Boolean DoWorkPiece(XtPointer closure);
-void Quit(Widget w, XtPointer closure, XtPointer callData);
+void Quit(Widget w, XtPointer closure, XtPointer callData) _X_NORETURN;
+void Reset(Widget w, XtPointer closure, XtPointer callData);
 void OwnSelection(Widget w, XtPointer closure, XtPointer callData);
 void SelectField(Widget w, XtPointer closure, XtPointer callData);
 void ParseFontNames(XtPointer closure);
@@ -79,7 +117,8 @@ void AnyValue(Widget w, XtPointer closure, XtPointer callData);
 void EnableOtherValues(Widget w, XtPointer closure, XtPointer callData);
 void EnableMenu(XtPointer closure);
 void SetCurrentFont(XtPointer closure);
-void QuitAction(Widget w, XEvent *event, String *params, Cardinal *num_params);
+void QuitAction(Widget w, XEvent *event, String *params, Cardinal *num_params)
+    _X_NORETURN;
 
 static XtActionsRec xfontsel_actions[] = {
     {"Quit",	    QuitAction}
@@ -95,8 +134,8 @@ static struct _appRes {
     int app_defaults_version;
     Cursor cursor;
     String pattern;
-    String pixelSizeList;
-    String pointSizeList;
+    char *pixelSizeList;
+    char *pointSizeList;
     Boolean print_on_quit;
     String sample_text;
     String sample_text16;
@@ -148,9 +187,10 @@ static XrmOptionDescRec options[] = {
 {"-scaled",	"scaledFonts",	XrmoptionNoArg,		"True"},
 };
 
-static void Syntax(const char *call)
+static void Syntax(const char *call, int exitval)
 {
     fprintf (stderr, "usage:  %s [-options ...] -fn font\n\n%s\n", call,
+       gettext(
 	"where options include:\n"
 	"    -display dpy           X server to contact\n"
 	"    -geometry geom         size and location of window\n"
@@ -159,8 +199,9 @@ static void Syntax(const char *call)
 	"    -sample string         sample text to use for 1-byte fonts\n"
 	"    -sample16 string       sample text to use for 2-byte fonts\n"
 	"    -sampleUCS string      sample text to use for ISO10646 fonts\n"
-	"    -scaled                use scaled instances of fonts\n");
-    exit (1);
+	"    -scaled                use scaled instances of fonts\n"
+	"plus any standard toolkit options\n"));
+    exit (exitval);
 }
 
 
@@ -222,6 +263,7 @@ static void ScheduleWork(XtProc proc, XtPointer closure, int priority);
 static void SetCurrentFontCount(void);
 static void SetNoFonts(void);
 static void SetParsingFontCount(int count);
+static void reset_currentFontNameString(void);
 
 static XtAppContext appCtx;
 static int numFonts;
@@ -233,11 +275,12 @@ static FieldValueList *fieldValues[FIELD_COUNT];
 static FontValues currentFont;
 static int matchingFontCount;
 static Boolean anyDisabled = False;
+static Widget resetButton;
 static Widget ownButton;
 static Widget fieldBox;
 static Widget countLabel;
 static Widget currentFontName;
-static String currentFontNameString;
+static char *currentFontNameString;
 static int currentFontNameSize;
 static Widget sampleText;
 static int textEncoding = -1;
@@ -254,10 +297,52 @@ main(int argc, char **argv)
 
     XtSetLanguageProc(NULL, (XtLanguageProc) NULL, NULL);
 
+    /* Handle args that don't require opening a display */
+    for (int n = 1; n < argc; n++) {
+	const char *argn = argv[n];
+	/* accept single or double dash for -help & -version */
+	if (argn[0] == '-' && argn[1] == '-') {
+	    argn++;
+	}
+	if (strcmp(argn, "-help") == 0) {
+	    Syntax(argv[0], 0);
+	}
+	if (strcmp(argn, "-version") == 0) {
+	    puts(PACKAGE_STRING);
+	    exit(0);
+	}
+    }
+
     topLevel = XtAppInitialize(&appCtx, "XFontSel", options, XtNumber(options),
 			       &argc, argv, NULL, NULL, 0);
 
-    if (argc != 1) Syntax(argv[0]);
+#ifdef USE_GETTEXT
+    /*
+     * Set up internationalized messages    Jhobson 8/23/00
+     *
+     * Do this after the AppInitialize since setlocale is setup by
+     * XtSetLanguageProc, but does not occur until XtAppInitialize happens.
+     */
+    textdomain("xfontsel");
+
+    {
+	const char *domaindir;
+
+	if ((domaindir = getenv("TEXTDOMAINDIR")) == NULL) {
+	    domaindir = LOCALEDIR;
+	}
+	bindtextdomain("xfontsel", domaindir);
+    }
+#endif
+
+    if (argc != 1) {
+	fputs(gettext("Unknown argument(s):"), stderr);
+	for (int n = 1; n < argc; n++) {
+	    fprintf(stderr, " %s", argv[n]);
+	}
+	fputs("\n\n", stderr);
+	Syntax(argv[0], 1);
+    }
 
     XtAppAddActions(appCtx, xfontsel_actions, XtNumber(xfontsel_actions));
     XtOverrideTranslations
@@ -266,15 +351,19 @@ main(int argc, char **argv)
     XtGetApplicationResources( topLevel, (XtPointer)&AppRes,
 			       resources, XtNumber(resources), NZ );
     if (AppRes.app_defaults_version < MIN_APP_DEFAULTS_VERSION) {
+	char full_message[300];
 	XrmDatabase rdb = XtDatabase(XtDisplay(topLevel));
-	XtWarning( "app-defaults file not properly installed." );
-	XrmPutLineResource( &rdb,
-"*sampleText*UCSLabel:XFontSel app-defaults file not properly installed;\\n\
-see 'xfontsel' manual page."
-			  );
+
+	XtWarning(gettext("app-defaults file not properly installed."));
+
+	snprintf(full_message, sizeof(full_message),
+		 "*sampleText*UCSLabel:%s",
+		 gettext("XFontSel app-defaults file not properly installed;\\n"
+			 "see 'xfontsel' manual page."));
+	XrmPutLineResource(&rdb, full_message);
     }
 
-    ScheduleWork(GetFontNames, (XtPointer)XtDisplay(topLevel), 0);
+    ScheduleWork(GetFontNames, (XtPointer)topLevel, 0);
 
     pane = XtCreateManagedWidget("pane",panedWidgetClass,topLevel,NZ);
     {
@@ -282,10 +371,13 @@ see 'xfontsel' manual page."
 
 	commandBox = XtCreateManagedWidget("commandBox",formWidgetClass,pane,NZ);
 	{
-	    Widget quitButton /*, ownButton , countLabel*/;
+	    Widget quitButton /*, resetButton, ownButton , countLabel*/;
 
 	    quitButton =
 		XtCreateManagedWidget("quitButton",commandWidgetClass,commandBox,NZ);
+
+	    resetButton =
+		XtCreateManagedWidget("resetButton",commandWidgetClass,commandBox,NZ);
 
 	    ownButton =
 		XtCreateManagedWidget("ownButton",toggleWidgetClass,commandBox,NZ);
@@ -294,6 +386,7 @@ see 'xfontsel' manual page."
 		XtCreateManagedWidget("countLabel",labelWidgetClass,commandBox,NZ);
 
 	    XtAddCallback(quitButton, XtNcallback, Quit, NULL);
+	    XtAddCallback(resetButton, XtNcallback, Reset, NULL);
 	    XtAddCallback(ownButton,XtNcallback,OwnSelection,(XtPointer)True);
 	}
 
@@ -321,10 +414,7 @@ see 'xfontsel' manual page."
 	/* currentFontName = */
 	{
 	    Arg args[1];
-	    currentFontNameSize = strlen(AppRes.pattern);
-	    if (currentFontNameSize < 128) currentFontNameSize = 128;
-	    currentFontNameString = (String)XtMalloc(currentFontNameSize);
-	    strcpy(currentFontNameString, AppRes.pattern);
+	    reset_currentFontNameString();
 	    XtSetArg(args[0], XtNlabel, currentFontNameString);
 	    currentFontName =
 		XtCreateManagedWidget("fontName",labelWidgetClass,pane,args,ONE);
@@ -348,7 +438,7 @@ see 'xfontsel' manual page."
                             &wm_delete_window, 1);
     XtAppMainLoop(appCtx);
 
-    return 0;
+    exit(0);
 }
 
 
@@ -441,19 +531,24 @@ struct ParseRec {
 
 void GetFontNames(XtPointer closure)
 {
-    Display *dpy = (Display*)closure;
+    Widget topLevel = (Widget)closure;
+    Display *dpy = XtDisplay(topLevel);
     ParseRec *parseRec;
-    int f, field, count;
-    String *fontNames;
-    Boolean *b;
+    int count;
+    char **fontNames;
     int work_priority = 0;
 
     fontNames = XListFonts(dpy, AppRes.pattern, 32767, &numFonts);
 
     fonts = (FontValues*)XtMalloc( numFonts*sizeof(FontValues) );
     fontInSet = (Boolean*)XtMalloc( numFonts*sizeof(Boolean) );
-    for (f = numFonts, b = fontInSet; f; f--, b++) *b = True;
-    for (field = 0; field < FIELD_COUNT; field++) {
+    {
+        int f;
+        Boolean *b;
+        for (f = numFonts, b = fontInSet; f; f--, b++)
+            *b = True;
+    }
+    for (int field = 0; field < FIELD_COUNT; field++) {
 	fieldValues[field] = (FieldValueList*)XtMalloc(sizeof(FieldValueList));
 	fieldValues[field]->allocated = 1;
 	fieldValues[field]->count = 0;
@@ -491,7 +586,7 @@ void GetFontNames(XtPointer closure)
     ScheduleWork((XtProc)XFreeFontNames,(XtPointer)fontNames,work_priority);
     ScheduleWork((XtProc)XtFree, (XtPointer)parseRec, work_priority);
     if (AppRes.scaled_fonts)
-	ScheduleWork(FixScalables,(XtPointer)0,work_priority);
+	ScheduleWork(FixScalables,(XtPointer)topLevel, work_priority);
     ScheduleWork(SortFields,(XtPointer)0,work_priority);
     SetParsingFontCount(matchingFontCount);
     if (strcmp(AppRes.pattern, DEFAULTPATTERN)) {
@@ -507,7 +602,7 @@ void GetFontNames(XtPointer closure)
 	    }
 	    else
 		XtAppWarning( appCtx,
-		    "internal error; pattern didn't match first font" );
+		    gettext("internal error; pattern didn't match first font" ));
 	}
 	else {
 	    SetNoFonts();
@@ -523,7 +618,7 @@ void ParseFontNames(XtPointer closure)
     ParseRec *parseRec = (ParseRec*)closure;
     char **fontNames = parseRec->fontNames;
     int num_fonts = parseRec->end;
-    FieldValueList **fieldValues = parseRec->fieldValues;
+    FieldValueList **fValues = parseRec->fieldValues;
     FontValues *fontValues = parseRec->fonts - numBadFonts;
     int i, font;
 
@@ -550,7 +645,7 @@ void ParseFontNames(XtPointer closure)
 		while (*p && *++p != DELIM);
 		len = p - fieldP;
 	    }
-	    for (i=fieldValues[f]->count,v=fieldValues[f]->value; i;i--,v++) {
+	    for (i=fValues[f]->count,v=fValues[f]->value; i;i--,v++) {
 		if (len == 0) {
 		    if (v->string == NULL) break;
 		}
@@ -561,22 +656,23 @@ void ParseFontNames(XtPointer closure)
 			break;
 	    }
 	    if (i == 0) {
-		int count = fieldValues[f]->count++;
-		if (count == fieldValues[f]->allocated) {
-		    int allocated = (fieldValues[f]->allocated += 10);
-		    fieldValues[f] = (FieldValueList*)
-			XtRealloc( (char *) fieldValues[f],
+		int count = fValues[f]->count++;
+		if (count == fValues[f]->allocated) {
+		    int allocated = (fValues[f]->allocated += 10);
+		    fValues[f] = (FieldValueList*)
+			XtRealloc( (char *) fValues[f],
 				   sizeof(FieldValueList) +
 					(allocated-1) * sizeof(FieldValue) );
 		}
-		v = &fieldValues[f]->value[count];
+		v = &fValues[f]->value[count];
 		v->field = f;
 		if (len == 0)
 		    v->string = NULL;
 		else {
-		    v->string = (String)XtMalloc( len+1 );
-		    strncpy( v->string, fieldP, len );
-		    v->string[len] = '\0';
+		    char *s = XtMalloc(len + 1);
+		    strncpy( s, fieldP, len );
+		    s[len] = '\0';
+		    v->string = (String) s;
 		}
 		v->font = (int*)XtMalloc( 10*sizeof(int) );
 		v->allocated = 10;
@@ -584,7 +680,7 @@ void ParseFontNames(XtPointer closure)
 		v->enable = True;
 		i = 1;
 	    }
-	    fontValues->value_index[f] = fieldValues[f]->count - i;
+	    fontValues->value_index[f] = fValues[f]->count - i;
 	    if ((i = v->count++) == v->allocated) {
 		int allocated = (v->allocated += 10);
 		v->font = (int*)XtRealloc( (char *) v->font,
@@ -610,13 +706,13 @@ static void AddScalables(int f)
     FieldValue *fval = fieldValues[f]->value;
 
     for (i = 0; i < max; i++, fval++) {
-	int *oofonts, *ofonts, *nfonts, *fonts;
+	int *oofonts, *ofonts, *nfonts, *sfonts;
 	int ocount, ncount, count;
 
 	if (fval->string && !strcmp(fval->string, "0"))
 	    continue;
 	count = numScaledFonts;
-	fonts = scaledFonts;
+	sfonts = scaledFonts;
 	ocount = fval->count;
 	ncount = ocount + count;
 	nfonts = (int *)XtMalloc( ncount * sizeof(int) );
@@ -625,11 +721,11 @@ static void AddScalables(int f)
 	fval->count = ncount;
 	fval->allocated = ncount;
 	while (count && ocount) {
-	    if (*fonts < *ofonts) {
-		*nfonts++ = *fonts++;
+	    if (*sfonts < *ofonts) {
+		*nfonts++ = *sfonts++;
 		count--;
-	    } else if (*fonts == *ofonts) {
-		*nfonts++ = *fonts++;
+	    } else if (*sfonts == *ofonts) {
+		*nfonts++ = *sfonts++;
 		count--;
 		ofonts++;
 		ocount--;
@@ -644,7 +740,7 @@ static void AddScalables(int f)
 	    ocount--;
 	}
 	while (count) {
-	    *nfonts++ = *fonts++;
+	    *nfonts++ = *sfonts++;
 	    count--;
 	}
 	XtFree((char *)oofonts);
@@ -700,13 +796,50 @@ static void NewScalables(int f, char *slist)
 /* Find all scalable fonts, defined as the set matching "0" in the pixel
  * size field (field 6).  Augment the match-lists for all other fields
  * that are scalable.  Add in new scalable pixel and point sizes given
- * in resources.
+ * in resources, along with the current Screen's actual resX and resY
+ * values.
  */
 /*ARGSUSED*/
 void FixScalables(XtPointer closure)
 {
     int i;
     FieldValue *fval = fieldValues[6]->value;
+    Widget topLevel = (Widget) closure;
+    Display *dpy = XtDisplay(topLevel);
+    int scr = XScreenNumberOfScreen(XtScreenOfObject(topLevel));
+    double xres, yres;
+    static char xreslist[21];		/* log10(UINT64_MAX) == 19 */
+    static char yreslist[21];
+
+    /* from xdpyinfo.c:
+     * there are 2.54 centimeters to an inch; so there are 25.4 millimeters.
+     *
+     *     dpi = N pixels / (M millimeters / (25.4 millimeters / 1 inch))
+     *         = N pixels / (M inch / 25.4)
+     *         = N * 25.4 pixels / M inch
+     */
+    xres = ((((double) DisplayWidth(dpy, scr)) * 25.4) /
+	    ((double) DisplayWidthMM(dpy, scr)));
+    yres = ((((double) DisplayHeight(dpy, scr)) * 25.4) /
+	    ((double) DisplayHeightMM(dpy, scr)));
+
+    /*
+     * xxx the "0" element is always added, so we can't force these here....
+     *
+     * However, what's interesting is that if the pattern contains '*' for these
+     * fields (i.e. instead of '0') then we end up with the menu containing "0,
+     * 100, xres", which makes for a really good demonstration of how scaling
+     * fonts without knowing the true screen resolution leads to very wonky
+     * results.
+     *
+     * xxx obviously these are static and related only to the screen of the
+     * Widget at the time this code executes and so you can't drag the Xfontsel
+     * winto to another screen with a different resolution and see things change
+     * dynamically -- you have to instantiate a new Xfontsel process on each
+     * different screen as desired.
+     */
+    sprintf(xreslist, "%d", (int) (xres + 0.5));
+    sprintf(yreslist, "%d", (int) (yres + 0.5));
 
     for (i = fieldValues[6]->count; --i >= 0; fval++) {
 	if (fval->string && !strcmp(fval->string, "0")) {
@@ -716,8 +849,8 @@ void FixScalables(XtPointer closure)
 	    NewScalables(6, AppRes.pixelSizeList);
 	    AddScalables(7);
 	    NewScalables(7, AppRes.pointSizeList);
-	    AddScalables(8);
-	    AddScalables(9);
+	    NewScalables(8, xreslist);
+	    NewScalables(9, yreslist);
 	    AddScalables(11);
 	    break;
 	}
@@ -904,6 +1037,7 @@ static void SetNoFonts(void)
     matchingFontCount = 0;
     SetCurrentFontCount();
     XtSetSensitive(fieldBox, False);
+    XtSetSensitive(resetButton, False);
     XtSetSensitive(ownButton, False);
     if (AppRes.app_defaults_version >= MIN_APP_DEFAULTS_VERSION) {
 	XtUnmapWidget(sampleText);
@@ -1005,11 +1139,11 @@ static void SetCurrentFontCount(void)
     char label[80];
     Arg args[1];
     if (matchingFontCount == 1)
-	strcpy( label, "1 name matches" );
+	strcpy( label, gettext("1 name matches") );
     else if (matchingFontCount)
-	snprintf( label, sizeof(label), "%d names match", matchingFontCount );
+	snprintf( label, sizeof(label), gettext("%d names match"), matchingFontCount);
     else
-	strcpy( label, "no names match" );
+	strcpy( label, gettext("no names match") );
     XtSetArg( args[0], XtNlabel, label );
     XtSetValues( countLabel, args, ONE );
 }
@@ -1020,9 +1154,9 @@ static void SetParsingFontCount(int count)
     char label[80];
     Arg args[1];
     if (count == 1)
-	strcpy( label, "1 name to parse" );
+	strcpy( label, gettext("1 name to parse") );
     else
-	snprintf( label, sizeof(label), "%d names to parse", count );
+	snprintf( label, sizeof(label), gettext("%d names to parse"), count );
     XtSetArg( args[0], XtNlabel, label );
     XtSetValues( countLabel, args, ONE );
     FlushXqueue(XtDisplay(countLabel));
@@ -1088,7 +1222,7 @@ void SetCurrentFont(XtPointer closure)
 		len = 1;
 	    }
 	    if (len+1 > --bytesLeft) {
-		currentFontNameString = (String)
+		currentFontNameString =
 		    XtRealloc(currentFontNameString, currentFontNameSize+=128);
 		bytesLeft += 128;
 	    }
@@ -1228,9 +1362,9 @@ void SelectField(Widget w, XtPointer closure, XtPointer callData)
     int field = (long)closure;
     FieldValue *values = fieldValues[field]->value;
     int count = fieldValues[field]->count;
-    printf( "field %d:\n", field );
+    printf(gettext("field %d:\n"), field );
     while (count--) {
-	printf( " %s: %d fonts\n", values->string, values->count );
+	printf( gettext(" %s: %d fonts\n"), values->string, values->count );
 	values++;
     }
     printf( "\n" );
@@ -1284,7 +1418,7 @@ void EnableOtherValues(Widget w, XtPointer closure, XtPointer callData)
     if (scaledFonts)
     {
 	/* Check for 2 out of 3 scalable y fields being set */
-	char *str;
+	const char *str;
 	Bool specificPxl, specificPt, specificY;
 
 	f = currentFont.value_index[6];
@@ -1389,6 +1523,28 @@ void Quit(Widget w, XtPointer closure, XtPointer callData)
     XtCloseDisplay(XtDisplay(w));
     if (AppRes.print_on_quit) printf( "%s", currentFontNameString );
     exit(0);
+}
+
+
+void Reset(Widget w, XtPointer closure, XtPointer callData) {
+  Arg args[1];
+  reset_currentFontNameString();
+  XtSetArg(args[0], XtNlabel, currentFontNameString);
+  XtSetValues(currentFontName, args, ONE);
+
+  for (int f = 0; f < FIELD_COUNT; f++)
+    currentFont.value_index[f] = patternFieldSpecified[f] ? 0 : -1;
+
+  SetCurrentFont(NULL);
+  EnableRemainingItems(SkipCurrentField); /* menu */
+}
+
+static void reset_currentFontNameString(void) {
+  currentFontNameSize = strlen(AppRes.pattern);
+  if (currentFontNameSize < 128) currentFontNameSize = 128;
+  XtFree(currentFontNameString);
+  currentFontNameString = XtMalloc(currentFontNameSize);
+  strcpy(currentFontNameString, AppRes.pattern);
 }
 
 

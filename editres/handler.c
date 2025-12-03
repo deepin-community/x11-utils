@@ -24,6 +24,10 @@ in this Software without prior written authorization from The Open Group.
  */
 
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include <X11/Intrinsic.h>
 #include <X11/StringDefs.h>
 
@@ -42,7 +46,7 @@ in this Software without prior written authorization from The Open Group.
 /*
  * Local function definitions.
  */
-static char * GetResourceName ( ResourceBoxInfo * res_box );
+static String GetResourceName ( ResourceBoxInfo * res_box );
 static void _AppendResourceString ( Widget w, XtPointer res_box_ptr,
 				    XtPointer filename_ptr );
 static void _SetResourcesFile ( Widget w, XtPointer junk,
@@ -180,8 +184,8 @@ PannerCallback(Widget w, XtPointer closure, XtPointer report_ptr)
     if (global_tree_info == NULL)
 	return;
 
-    XtSetArg (args[0], XtNx, -report->slider_x);
-    XtSetArg (args[1], XtNy, -report->slider_y);
+    XtSetArg (args[0], (String)XtNx, -report->slider_x);
+    XtSetArg (args[1], (String)XtNy, -report->slider_y);
 
     XtSetValues(global_tree_info->tree_widget, args, TWO);
 }
@@ -204,19 +208,19 @@ PortholeCallback(Widget w, XtPointer panner_ptr, XtPointer report_ptr)
     XawPannerReport *report = (XawPannerReport *) report_ptr;
     Widget panner = (Widget) panner_ptr;
 
-    XtSetArg (args[n], XtNsliderX, report->slider_x); n++;
-    XtSetArg (args[n], XtNsliderY, report->slider_y); n++;
+    XtSetArg (args[n], (String)XtNsliderX, report->slider_x); n++;
+    XtSetArg (args[n], (String)XtNsliderY, report->slider_y); n++;
     if (report->changed != (XawPRSliderX | XawPRSliderY)) {
-	XtSetArg (args[n], XtNsliderWidth, report->slider_width); n++;
-	XtSetArg (args[n], XtNsliderHeight, report->slider_height); n++;
-	XtSetArg (args[n], XtNcanvasWidth, report->canvas_width); n++;
-	XtSetArg (args[n], XtNcanvasHeight, report->canvas_height); n++;
+	XtSetArg (args[n], (String)XtNsliderWidth, report->slider_width); n++;
+	XtSetArg (args[n], (String)XtNsliderHeight, report->slider_height); n++;
+	XtSetArg (args[n], (String)XtNcanvasWidth, report->canvas_width); n++;
+	XtSetArg (args[n], (String)XtNcanvasHeight, report->canvas_height); n++;
     }
     XtSetValues (panner, args, n);
 }
 
 /*	Function Name: FlashActiveWidgets
- *	Description: called to flass all active widgets in the display.
+ *	Description: called to flash all active widgets in the display.
  *	Arguments: *** NOT USED ***
  *	Returns: none.
  */
@@ -265,7 +269,7 @@ GetResourceList(Widget w, XtPointer junk, XtPointer garbage)
     }
 
     /*
-     * No resoruces, fetch them from the client.
+     * No resources, fetch them from the client.
      */
 
     _XEditResResetStream(stream);
@@ -320,7 +324,7 @@ AnyChosen(Widget w, XtPointer any_info_ptr, XtPointer state_ptr)
 	    XtSetSensitive(any_info->left_dot, FALSE);
 	    XtSetSensitive(any_info->left_star, FALSE);
 
-	    XtSetArg(args[0], XtNstate, TRUE);
+	    XtSetArg(args[0], (String)XtNstate, TRUE);
 	    XtSetValues(any_info->left_star, args, ONE);
 	}
 
@@ -328,7 +332,7 @@ AnyChosen(Widget w, XtPointer any_info_ptr, XtPointer state_ptr)
 	    XtSetSensitive(any_info->right_dot, FALSE);
 	    XtSetSensitive(any_info->right_star, FALSE);
 
-	    XtSetArg(args[0], XtNstate, TRUE);
+	    XtSetArg(args[0], (String)XtNstate, TRUE);
 	    XtSetValues(any_info->right_star, args, ONE);
 	}
 	any_info->left_count++;
@@ -346,7 +350,7 @@ AnyChosen(Widget w, XtPointer any_info_ptr, XtPointer state_ptr)
 	    XtSetSensitive(any_info->left_dot, TRUE);
 	    XtSetSensitive(any_info->left_star, TRUE);
 
-	    XtSetArg(args[0], XtNstate, TRUE);
+	    XtSetArg(args[0], (String)XtNstate, TRUE);
 	    XtSetValues(any_info->left_dot, args, ONE);
 	}
 
@@ -354,7 +358,7 @@ AnyChosen(Widget w, XtPointer any_info_ptr, XtPointer state_ptr)
 	    XtSetSensitive(any_info->right_dot, TRUE);
 	    XtSetSensitive(any_info->right_star, TRUE);
 
-	    XtSetArg(args[0], XtNstate, TRUE);
+	    XtSetArg(args[0], (String)XtNstate, TRUE);
 	    XtSetValues(any_info->right_dot, args, ONE);
 	}
     }
@@ -369,11 +373,11 @@ AnyChosen(Widget w, XtPointer any_info_ptr, XtPointer state_ptr)
  */
 
 
-static char *
+static String
 GetResourceName(ResourceBoxInfo *res_box)
 {
     XawListReturnStruct * list_info;
-    char * result;
+    String result;
 
     list_info = XawListShowCurrent(res_box->norm_list);
     if ((list_info->list_index == XAW_LIST_NONE) &&
@@ -382,7 +386,7 @@ GetResourceName(ResourceBoxInfo *res_box)
     }
 
     if (list_info->list_index == XAW_LIST_NONE)
-	result = "unknown";
+      result = (String)"unknown";
     else
 	result = list_info->string;
 
@@ -414,7 +418,7 @@ ActivateWidgetsAndSetResourceString(Widget w,
  *	Description: Sets the resource label to correspond to the currently
  *                   chosen string.
  *	Arguments: w - The widget that invoked this callback, or NULL.
- *                 node_ptr - pointer to widget node contating this res box.
+ *                 node_ptr - pointer to widget node containing this res box.
  *                 call_data - The call data for the action that invoked
  *                             this callback.
  *	Returns: none.
@@ -467,7 +471,7 @@ SetResourceString(Widget w, XtPointer node_ptr, XtPointer junk)
     len = strlen(buf) + 2; /* Leave space for ':' and '\0' */
 
 #ifdef notdef
-    XtSetArg(args[0], XtNstring, &temp);
+    XtSetArg(args[0], (String)XtNstring, &temp);
     XtGetValues(res_box->value_wid, args, ONE);
     len += strlen(temp);
 #endif
@@ -483,23 +487,21 @@ SetResourceString(Widget w, XtPointer node_ptr, XtPointer junk)
     strcat(malloc_string, temp);
 #endif
 
-    XtSetArg(args[0], XtNlabel, malloc_string);
+    XtSetArg(args[0], (String)XtNlabel, malloc_string);
     XtSetValues(res_box->res_label, args, ONE);
 }
 
 /*	Function Name: ResourceListCallback
  *	Description: Callback functions for the resource lists.  This
- *                   routine is essentialy called by the list widgets
+ *                   routine is essentially called by the list widgets
  *                   Notify action.  If action EnableGetVal has been
  *                   invoked,  ResourceListCallback will perform a
  *                   GetValues protocol request.
  *	Arguments: list - the list widget that we are dealing with.
- *                 node_ptr - pointer to widget node contating this res box.
+ *                 node_ptr - pointer to widget node containing this res box.
  *                 junk - UNUSED.
  *	Returns: none
  */
-
-extern Boolean do_get_values;
 
 void
 ResourceListCallback(Widget list, XtPointer node_ptr, XtPointer junk)
@@ -573,10 +575,10 @@ _AppendResourceString(Widget w, XtPointer res_box_ptr, XtPointer filename_ptr)
 	return;
     }
 
-    XtSetArg(args[0], XtNlabel, &resource_string);
+    XtSetArg(args[0], (String)XtNlabel, &resource_string);
     XtGetValues(res_box->res_label, args, ONE);
 
-    XtSetArg(args[0], XtNstring, &value_ptr);
+    XtSetArg(args[0], (String)XtNstring, &value_ptr);
     XtGetValues(res_box->value_wid, args, ONE);
 
     fprintf(fp, "%s %s\n", resource_string, value_ptr);
@@ -657,7 +659,7 @@ SetFile(Widget w, XtPointer junk, XtPointer garbage)
  *	Description: Apply the current resource to the running application.
  *	Arguments: w - any widget in the application.
  *                 node_ptr - a pointer to the node containing
- *                            the current resouce box.
+ *                            the current resource box.
  *                 junk - UNUSED.
  *	Returns: none
  */
@@ -679,7 +681,7 @@ ApplyResource(Widget w, XtPointer node_ptr, XtPointer junk)
     info.stream = stream;
     info.count = 0;
 
-    XtSetArg(args[0], XtNlabel, &value);
+    XtSetArg(args[0], (String)XtNlabel, &value);
     XtGetValues(node->resources->res_box->res_label, args, ONE);
 
     info.database = NULL;
@@ -702,7 +704,7 @@ ApplyResource(Widget w, XtPointer node_ptr, XtPointer junk)
     len = stream->current - stream->top;
 
     /*
-     * Insert the widget count, overriden later.
+     * Insert the widget count, overridden later.
      */
 
     _XEditResPut16(stream, 0);
@@ -726,7 +728,7 @@ ApplyResource(Widget w, XtPointer node_ptr, XtPointer junk)
 /*	Function Name: ObtainResource
  *	Description: Obtain the current resource from the running application.
  *	Arguments: node_ptr - a pointer to the node containing
- *                            the current resouce box.
+ *                            the current resource box.
  *	Returns: none
  */
 
@@ -745,7 +747,7 @@ ObtainResource(XtPointer node_ptr)
     info.stream = stream;
     info.count = 1;
 
-    XtSetArg(args[0], XtNlabel, &value);
+    XtSetArg(args[0], (String)XtNlabel, &value);
     XtGetValues(node->resources->res_box->res_label, args, ONE);
 
     info.database = NULL;
@@ -860,7 +862,7 @@ ActivateResourceWidgets(Widget w, XtPointer node_ptr, XtPointer junk)
     info.count = 0;
     info.stream = NULL;
 
-    XtSetArg(args[0], XtNlabel, &line);
+    XtSetArg(args[0], (String)XtNlabel, &line);
     XtGetValues(node->resources->res_box->res_label, args, ONE);
 
     info.database = NULL;
@@ -875,7 +877,7 @@ ActivateResourceWidgets(Widget w, XtPointer node_ptr, XtPointer junk)
 
 /*	Function Name: SetOnlyMatchingWidgets
  *	Description: Activates all widgets in the tree that match this
- *                   resource specifiction.
+ *                   resource specification.
  *	Arguments: node - the current node.
  *                 info_ptr - the pointer to the apply info.
  *	Returns: none
@@ -897,7 +899,7 @@ SetOnlyMatchingWidgets(WNode *node, XtPointer info_ptr)
 
     state = CheckDatabase(info->database, name_quarks, class_quarks);
 
-    XtSetArg(args[0], XtNstate, state);
+    XtSetArg(args[0], (String)XtNstate, state);
     XtSetValues(node->widget, args, ONE);
     TreeToggle(node->widget, (XtPointer) node, (XtPointer)(long) state);
 
